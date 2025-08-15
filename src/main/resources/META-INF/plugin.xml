@@ -1,0 +1,35 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>name.tachenov.plugins.theme-patcher</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
+    <name>Theme Patcher</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://github.com/stachenov">Sergei Tachenov</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
+    <description><![CDATA[
+        Found a theme you like, except that one color?<br/>
+        Or you'd like all trees to be a bit denser?<br/>
+        With this plugin, you can set up rules to modify installed themes on the fly as they're applied.<br/>
+    ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable provider="name.tachenov.plugins.themePatcher.ui.ThemePatcherConfigurableProvider" key="configurable.title"/>
+        <applicationService serviceImplementation="name.tachenov.plugins.themePatcher.app.ThemePatcherConfigService" />
+    </extensions>
+    <applicationListeners>
+        <listener class="name.tachenov.plugins.themePatcher.app.LafPatchingListener" topic="com.intellij.ide.ui.LafManagerListener"/>
+    </applicationListeners>
+    <resource-bundle>messages.ThemePatcherMessageBundle</resource-bundle>
+</idea-plugin>
