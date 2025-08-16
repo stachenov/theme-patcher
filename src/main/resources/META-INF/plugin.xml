@@ -27,6 +27,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationConfigurable provider="name.tachenov.plugins.themePatcher.ui.ThemePatcherConfigurableProvider" key="configurable.title"/>
         <applicationService serviceImplementation="name.tachenov.plugins.themePatcher.app.ThemePatcherConfigService" />
+        <postStartupActivity implementation="name.tachenov.plugins.themePatcher.app.LafPatchingActivity" />
     </extensions>
     <applicationListeners>
         <listener class="name.tachenov.plugins.themePatcher.app.LafPatchingListener" topic="com.intellij.ide.ui.LafManagerListener"/>

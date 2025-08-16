@@ -3,13 +3,7 @@
 package name.tachenov.plugins.themePatcher.ui
 
 import com.intellij.ide.ui.LafManager
-import com.intellij.openapi.actionSystem.ActionGroup
-import com.intellij.openapi.actionSystem.ActionUpdateThread
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.actionSystem.DataSink
-import com.intellij.openapi.actionSystem.UiDataProvider
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.options.BoundSearchableConfigurable
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.DialogPanel
@@ -18,19 +12,18 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.ui.LayeredIcon
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBList
+import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.toMutableProperty
 import com.intellij.ui.dsl.listCellRenderer.listCellRenderer
 import com.intellij.ui.table.JBTable
-import name.tachenov.plugins.themePatcher.app.LafValue
-import name.tachenov.plugins.themePatcher.app.RuleConfig
-import name.tachenov.plugins.themePatcher.app.RulesetConfig
-import name.tachenov.plugins.themePatcher.app.ThemeConfig
-import name.tachenov.plugins.themePatcher.app.ThemePatcherConfigService
+import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
 import javax.swing.DefaultListModel
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.GroupLayout.DEFAULT_SIZE
+import javax.swing.GroupLayout.PREFERRED_SIZE
 import javax.swing.JPanel
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import javax.swing.ListModel
@@ -42,7 +35,7 @@ internal class ThemePatcherConfigurable : BoundSearchableConfigurable("Theme Pat
             group(message("configurable.rules")) {
                 row {
                     val configService = ThemePatcherConfigService.getInstance()
-                    cell(RulesetEditor()).bind(
+                    cell(RulesetEditor()).align(AlignX.FILL).bind(
                         componentGet = { component -> component.rulesets },
                         componentSet = { component, value -> component.rulesets = value },
                         prop = configService::rulesets.toMutableProperty(),
@@ -122,11 +115,11 @@ private class RulesetEditor : JPanel(), UiDataProvider {
             addComponent(rulePanel)
         }
         hg.apply {
-            addComponent(rulesetListPanel)
+            addComponent(rulesetListPanel, DEFAULT_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
             addPreferredGap(RELATED)
-            addComponent(themePanel)
+            addComponent(themePanel, DEFAULT_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
             addPreferredGap(RELATED)
-            addComponent(rulePanel)
+            addComponent(rulePanel, DEFAULT_SIZE, DEFAULT_SIZE, INFINITE_SIZE)
         }
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
@@ -177,13 +170,13 @@ private class RuleTableModel : DefaultTableModel() {
     val values: List<RuleConfig>
         get() = (0 until rowCount).map { row ->
             val key = getValueAt(row, KEY_COLUMN) as String
-            val value = getValueAt(row, VALUE_COLUMN) as LafValue
+            val value = getValueAt(row, VALUE_COLUMN) as LafValueConfig
             RuleConfig(key, value)
         }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
         KEY_COLUMN -> String::class.java
-        VALUE_COLUMN -> LafValue::class.java
+        VALUE_COLUMN -> LafValueConfig::class.java
         else -> throw IllegalArgumentException("No colum with the index $columnIndex")
     }
 
@@ -251,3 +244,4 @@ private val <T> ListModel<T>.values: List<T>
     get() = (0 until size).map { getElementAt(it) }
 
 private val THEME_LIST_MODEL_KEY = DataKey.create<DefaultListModel<ThemeConfig>>("name.tachenov.plugins.themePatcher.THEME_LIST_MODEL")
+private const val INFINITE_SIZE = Short.MAX_VALUE.toInt()

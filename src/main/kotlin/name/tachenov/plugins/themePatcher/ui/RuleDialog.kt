@@ -26,7 +26,9 @@ private class RuleDialog(
 ) : DialogWrapper(null, parent, false, IdeModalityType.IDE) {
 
     private val keyModel = DefaultComboBoxModel(UIManager.getLookAndFeelDefaults().keys.filterIsInstance<String>().sorted().toTypedArray())
-    private val keyComboBox = ComboBox(keyModel)
+    private val keyComboBox = ComboBox(keyModel).apply {
+        isSwingPopup = false // to enable speed search, as there is a lot of keys
+    }
     private val valueInput = JBTextField()
 
     val value: RuleConfig?
