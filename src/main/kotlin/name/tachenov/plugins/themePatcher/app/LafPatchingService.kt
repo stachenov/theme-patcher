@@ -5,9 +5,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.util.ui.JBUI
+import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
+import javax.swing.plaf.ColorUIResource
 
 @Service(Service.Level.APP)
 internal class LafPatchingService {
@@ -95,12 +97,14 @@ internal class LafPatchingService {
         when (value) {
             null -> null
             is Int -> IntLafValueConfig(JBUI.unscale(value)) // unscale() is not very reliable, but there's no other easy way
+            is Color -> ColorLafValueConfig(value)
             else -> null
         }
 }
 
 private fun LafValueConfig.toUiDefaultsValue(): Any = when (this) {
     is IntLafValueConfig -> JBUI.scale(intValue)
+    is ColorLafValueConfig -> ColorUIResource(red, green, blue)
 }
 
 private val LOG = logger<LafPatchingService>()

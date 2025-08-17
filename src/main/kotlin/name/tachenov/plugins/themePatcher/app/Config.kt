@@ -5,6 +5,8 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import kotlinx.serialization.Serializable
+import java.awt.Color
+import javax.swing.plaf.ColorUIResource
 
 @State(name = "themePatcher", storages = [Storage("themePatcher.xml")])
 internal class ThemePatcherConfigService : SerializablePersistentStateComponent<Config>(Config()) {
@@ -52,4 +54,15 @@ internal sealed class LafValueConfig
 @Serializable
 internal data class IntLafValueConfig(val intValue: Int): LafValueConfig() {
     override fun toString(): String = intValue.toString()
+}
+
+@Serializable
+internal data class ColorLafValueConfig(
+    val red: Int,
+    val green: Int,
+    val blue: Int,
+) : LafValueConfig() {
+    constructor(color: Color) : this(color.red, color.green, color.blue)
+    fun toColor(): Color = ColorUIResource(red, green, blue)
+    override fun toString(): String = "#%02X%02X%02X".format(red, green, blue)
 }

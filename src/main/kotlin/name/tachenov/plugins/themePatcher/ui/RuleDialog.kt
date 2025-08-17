@@ -3,19 +3,19 @@ package name.tachenov.plugins.themePatcher.ui
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.ColorPanel
 import com.intellij.ui.components.JBTextField
-import name.tachenov.plugins.themePatcher.app.IntLafValueConfig
-import name.tachenov.plugins.themePatcher.app.LafPatchingService
-import name.tachenov.plugins.themePatcher.app.LafValueConfig
-import name.tachenov.plugins.themePatcher.app.RuleConfig
+import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
+import java.awt.CardLayout
 import java.awt.Component
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 
-internal fun showRuleDialog(parent: Component, initialValue: RuleConfig?): RuleConfig? {
-    val dialog = RuleDialog(parent, initialValue)
+internal fun showRuleDialog(parent: Component, initialValue: RuleConfig?, availableKeys: List<String>): RuleConfig? {
+    if (availableKeys.isEmpty()) return null // very unlikely, unless the user has already customized every key in the world
+    val dialog = RuleDialog(parent, initialValue, availableKeys)
     return if (dialog.showAndGet()) {
         dialog.value
     }
@@ -27,21 +27,13 @@ internal fun showRuleDialog(parent: Component, initialValue: RuleConfig?): RuleC
 private class RuleDialog(
     parent: Component,
     private val initialValue: RuleConfig?,
+    availableKeys: List<String>,
 ) : DialogWrapper(null, parent, false, IdeModalityType.IDE) {
     private val lookAndFeelDefaults = UIManager.getLookAndFeelDefaults()
 
     private val valueInput = ValueInput()
 
-    private val keyModel = DefaultComboBoxModel(
-        lookAndFeelDefaults.entries
-            .asSequence()
-            .filter { (key, value) -> LafPatchingService.getInstance().supportsValueType(value) }
-            .map { it.key }
-            .filterIsInstance<String>()
-            .toList()
-            .sorted()
-            .toTypedArray()
-    )
+    private val keyModel = DefaultComboBoxModel(availableKeys.toTypedArray())
 
     private val keyComboBox = ComboBox(keyModel).apply {
         isSwingPopup = false // to enable speed search, as there is a lot of keys
@@ -60,8 +52,11 @@ private class RuleDialog(
         }
 
     init {
+        title = message("configurable.rule.title")
         init()
     }
+
+    override fun getPreferredFocusedComponent(): JComponent = keyComboBox
 
     override fun createCenterPanel(): JComponent {
         if (initialValue != null) {
@@ -69,9 +64,9 @@ private class RuleDialog(
             valueInput.value = initialValue.value
         }
         keyComboBox.addActionListener {
-            val selectedKey = keyComboBox.selectedItem as? String? ?: return@addActionListener
-            valueInput.value = LafPatchingService.getInstance().convertToConfigValue(lookAndFeelDefaults[selectedKey])
+            showSelectedKeyInput()
         }
+        showSelectedKeyInput()
 
         val result = JPanel()
         val layout = GroupLayout(result)
@@ -94,6 +89,11 @@ private class RuleDialog(
         return result
     }
 
+    private fun showSelectedKeyInput() {
+        val selectedKey = keyComboBox.selectedItem as? String? ?: return
+        valueInput.value = LafPatchingService.getInstance().convertToConfigValue(lookAndFeelDefaults[selectedKey])
+    }
+
     override fun doValidate(): ValidationInfo? = when {
         keyComboBox.selectedItem == null -> { // not normally possible, but just in case
             ValidationInfo(message("configurable.rule.validation.no.key"), keyComboBox)
@@ -105,43 +105,52 @@ private class RuleDialog(
     }
 }
 
-private class ValueInput : JTabbedPane() {
+private class ValueInput : JPanel() {
     var value: LafValueConfig?
-        get() = currentTab.value
+        get() = currentInput.value
         set(value) {
             if (value != null) {
                 val tab = tabForType(value)
                 tab.value = value
-                currentTab = tab
+                currentInput = tab
             }
             else {
-                intInputTab.value = null
-                currentTab = intInputTab
+                intInput.value = null
+                currentInput = intInput
             }
         }
 
-    val acceptedValuesForm: String get() = currentTab.acceptedValuesForm
+    val acceptedValuesForm: String get() = currentInput.acceptedValuesForm ?: "<ERROR>" // some editors simply don't produce invalid values
 
-    private val intInputTab = IntInput()
+    private val inputLayout = CardLayout()
+    private val intInput = IntInput()
+    private val colorInput = ColorInput()
 
-    private var currentTab: TypedValueInput<*> = intInputTab
+    private var currentInput: TypedValueInput<*> = intInput
         set(value) {
             field = value
-            selectedComponent = value.component
+            inputLayout.show(this, value.javaClass.name)
         }
 
     @Suppress("UNCHECKED_CAST")
     private fun tabForType(type: LafValueConfig): TypedValueInput<LafValueConfig> = when (type) {
-        is IntLafValueConfig -> intInputTab
+        is IntLafValueConfig -> intInput
+        is ColorLafValueConfig -> colorInput
     } as TypedValueInput<LafValueConfig>
 
     init {
-        addTab(message("configurable.type.int"), intInputTab.component)
+        this.layout = inputLayout
+        addInput(intInput)
+        addInput(colorInput)
+    }
+
+    private fun addInput(input: TypedValueInput<*>) {
+        add(input.component, input.javaClass.name)
     }
 }
 
 private sealed class TypedValueInput<T : LafValueConfig> {
-    abstract val acceptedValuesForm: String
+    abstract val acceptedValuesForm: String?
     abstract var value: T?
     abstract val component: JComponent
 }
@@ -157,4 +166,16 @@ private class IntInput : TypedValueInput<IntLafValueConfig>() {
         }
 
     override val component: JBTextField = JBTextField()
+}
+
+private class ColorInput : TypedValueInput<ColorLafValueConfig>() {
+    override val acceptedValuesForm: String? = null
+
+    override var value: ColorLafValueConfig?
+        get() = component.selectedColor?.let { ColorLafValueConfig(it) }
+        set(value) {
+            component.selectedColor = value?.toColor()
+        }
+
+    override val component: ColorPanel = ColorPanel()
 }

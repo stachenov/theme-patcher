@@ -19,14 +19,11 @@ import com.intellij.ui.dsl.listCellRenderer.listCellRenderer
 import com.intellij.ui.table.JBTable
 import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
-import javax.swing.DefaultListModel
-import javax.swing.GroupLayout
+import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
-import javax.swing.JPanel
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
-import javax.swing.ListModel
 import javax.swing.table.DefaultTableModel
 
 internal class ThemePatcherConfigurable : BoundSearchableConfigurable("Theme Patcher", "name.tachenov.plugins.themePatcher") {
@@ -115,6 +112,9 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         ruleToolbarDecorator.setEditAction {
             editRule()
         }
+        ruleToolbarDecorator.setRemoveAction {
+            removeRule()
+        }
 
         rulesetListPanel = rulesetListToolbarDecorator.createPanel()
         themePanel = themeToolbarDecorator.createPanel()
@@ -164,7 +164,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     private fun addRule() {
         val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
-        val rule = showRuleDialog(this, null)
+        val rule = showRuleDialog(this, null, availableKeys(ruleTableModel))
         if (rule != null) {
             ruleTableModel.add(rule)
         }
@@ -174,10 +174,30 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         val selectedRow = ruleTable.selectedRow.takeIf { it >= 0 }?.let { ruleTable.convertRowIndexToModel(it) } ?: return
         val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
         val initialValue = ruleTableModel.getValue(selectedRow)
-        val rule = showRuleDialog(this, initialValue)
+        val rule = showRuleDialog(this, initialValue, availableKeys(ruleTableModel, includeKey = initialValue.key))
         if (rule != null) {
             ruleTableModel.setValue(selectedRow, rule)
         }
+    }
+
+    private fun removeRule() {
+        val selectedRow = ruleTable.selectedRow.takeIf { it >= 0 }?.let { ruleTable.convertRowIndexToModel(it) } ?: return
+        val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
+        ruleTableModel.removeRow(selectedRow)
+    }
+
+    private fun availableKeys(ruleTableModel: RuleTableModel, includeKey: String? = null): List<String> {
+        val lookAndFeelDefaults = UIManager.getLookAndFeelDefaults()
+        val allAvailable = lookAndFeelDefaults.entries
+            .asSequence()
+            .filter { LafPatchingService.getInstance().supportsValueType(it.value) }
+            .map { it.key }
+            .filterIsInstance<String>()
+            .toSet()
+        val alreadyUsed = ruleTableModel.values.map { it.key }.toSet()
+        val notYetUsed = allAvailable - alreadyUsed
+        val result = if (includeKey == null) notYetUsed else notYetUsed + includeKey
+        return result.sorted()
     }
 
     override fun uiDataSnapshot(sink: DataSink) {
