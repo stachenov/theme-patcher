@@ -9,8 +9,11 @@ import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
 import java.awt.CardLayout
 import java.awt.Component
-import javax.swing.*
+import javax.swing.DefaultComboBoxModel
+import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.JComponent
+import javax.swing.JPanel
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 
 internal fun showRuleDialog(parent: Component, initialValue: RuleConfig?, availableKeys: List<String>): RuleConfig? {
@@ -29,8 +32,6 @@ private class RuleDialog(
     private val initialValue: RuleConfig?,
     availableKeys: List<String>,
 ) : DialogWrapper(null, parent, false, IdeModalityType.IDE) {
-    private val lookAndFeelDefaults = UIManager.getLookAndFeelDefaults()
-
     private val valueInput = ValueInput()
 
     private val keyModel = DefaultComboBoxModel(availableKeys.toTypedArray())

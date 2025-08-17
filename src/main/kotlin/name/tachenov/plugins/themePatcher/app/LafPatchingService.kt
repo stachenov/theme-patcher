@@ -9,8 +9,6 @@ import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
-import javax.swing.UIDefaults
-import javax.swing.UIManager
 import javax.swing.plaf.ColorUIResource
 
 @Service(Service.Level.APP)
@@ -55,22 +53,21 @@ internal class LafPatchingService {
     fun patchThemeOnLafChange() {
         val theme = LafManager.getInstance().currentUIThemeLookAndFeel ?: return
         LOG.debug("Patching the theme id=${theme.id}, name=${theme.name}")
-        val defaults = UIManager.getLookAndFeelDefaults()
         if (lastPatchedThemeId == theme.id) {
             // Some rules might have been removed,
             // so the values they patched might be stuck in the patched state.
             // Restore everything we've ever patched before patching again.
-            restoreOriginalValues(defaults)
+            restoreOriginalValues(lookAndFeelDefaults)
         }
         else {
             // The theme has been changed, and therefore the original values are no longer relevant.
             clearOriginalValues()
         }
-        patchThemeValues(theme, defaults)
+        patchThemeValues(theme, lookAndFeelDefaults)
         lastPatchedThemeId = theme.id
     }
 
-    private fun restoreOriginalValues(defaults: UIDefaults) {
+    private fun restoreOriginalValues(defaults: LookAndFeelDefaults) {
         defaults.putAll(lastPatchedThemeOriginalValues)
     }
 
@@ -78,7 +75,7 @@ internal class LafPatchingService {
         lastPatchedThemeOriginalValues.clear()
     }
 
-    private fun patchThemeValues(theme: UIThemeLookAndFeelInfo, defaults: UIDefaults) {
+    private fun patchThemeValues(theme: UIThemeLookAndFeelInfo, defaults: LookAndFeelDefaults) {
         for (ruleset in ThemePatcherConfigService.getInstance().rulesets) {
             if (theme.id in ruleset.themes.map { it.themeId }) {
                 LOG.debug("Applying the ruleset ${ruleset.rulesetName}")

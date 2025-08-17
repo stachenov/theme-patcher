@@ -19,11 +19,14 @@ import com.intellij.ui.dsl.listCellRenderer.listCellRenderer
 import com.intellij.ui.table.JBTable
 import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
-import javax.swing.*
+import javax.swing.DefaultListModel
+import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
+import javax.swing.JPanel
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
+import javax.swing.ListModel
 import javax.swing.table.DefaultTableModel
 
 internal class ThemePatcherConfigurable : BoundSearchableConfigurable("Theme Patcher", "name.tachenov.plugins.themePatcher") {
@@ -187,12 +190,10 @@ private class RulesetEditor : JPanel(), UiDataProvider {
     }
 
     private fun availableKeys(ruleTableModel: RuleTableModel, includeKey: String? = null): List<String> {
-        val lookAndFeelDefaults = UIManager.getLookAndFeelDefaults()
         val allAvailable = lookAndFeelDefaults.entries
             .asSequence()
             .filter { LafPatchingService.getInstance().supportsValueType(it.value) }
             .map { it.key }
-            .filterIsInstance<String>()
             .toSet()
         val alreadyUsed = ruleTableModel.values.map { it.key }.toSet()
         val notYetUsed = allAvailable - alreadyUsed
