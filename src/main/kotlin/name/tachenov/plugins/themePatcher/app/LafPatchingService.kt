@@ -32,16 +32,20 @@ internal class LafPatchingService {
      */
     fun patchThemeOnFirstProjectOpen() {
         if (firstRun.compareAndSet(true, false)) {
-            // We can't just patch the theme here, as it needs to be actually applied.
-            // So we trigger a full theme refresh, which will act like the user changed the theme,
-            // and eventually call LafPatchingListener and update the UI.
-            SwingUtilities.invokeLater { // must do it on the EDT
-                LafManager.getInstance().updateUI()
-            }
+            patchCurrentTheme()
         }
     }
 
-    fun patchTheme() {
+    fun patchCurrentTheme() {
+        // We can't just patch the theme here, as it needs to be actually applied.
+        // So we trigger a full theme refresh, which will act like the user changed the theme,
+        // and eventually call LafPatchingListener and update the UI.
+        SwingUtilities.invokeLater { // must do it on the EDT
+            LafManager.getInstance().updateUI()
+        }
+    }
+
+    fun patchThemeOnLafChange() {
         val theme = LafManager.getInstance().currentUIThemeLookAndFeel ?: return
         LOG.debug("Patching the theme id=${theme.id}, name=${theme.name}")
         val defaults = UIManager.getLookAndFeelDefaults()
@@ -54,6 +58,15 @@ internal class LafPatchingService {
             }
         }
     }
+
+    fun supportsValueType(value: Any?): Boolean = convertToConfigValue(value) != null
+
+    fun convertToConfigValue(value: Any?): LafValueConfig? =
+        when (value) {
+            null -> null
+            is Int -> IntLafValueConfig(JBUI.unscale(value)) // unscale() is not very reliable, but there's no other easy way
+            else -> null
+        }
 }
 
 private fun LafValueConfig.toUiDefaultsValue(): Any = when (this) {

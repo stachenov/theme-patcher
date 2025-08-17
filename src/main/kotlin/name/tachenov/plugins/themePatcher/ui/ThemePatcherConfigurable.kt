@@ -72,6 +72,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
             )
         }
         set(value) {
+            val selectedRuleset = rulesetList.selectedValue
             rulesetListModel.clear()
             themeListModels.clear()
             rulesetListModel.addAll(value.map { it.rulesetName })
@@ -83,28 +84,46 @@ private class RulesetEditor : JPanel(), UiDataProvider {
                     ruleTableModel.addAll(ruleset.rules)
                 }
             }
+            if (value.isNotEmpty()) {
+                rulesetList.selectedIndex = if (selectedRuleset == null) {
+                    0
+                }
+                else {
+                    val rulesetIndex = value.indexOfFirst { it.rulesetName == selectedRuleset }
+                    if (rulesetIndex >= 0) {
+                        rulesetIndex
+                    }
+                    else {
+                        0
+                    }
+                }
+            }
         }
 
     init {
-        rulesetListToolbarDecorator.setAddAction {
-            addRuleset()
-        }
-        rulesetListPanel = rulesetListToolbarDecorator.createPanel()
-        rulesetList.addListSelectionListener {
-            themeList.model = rulesetList.selectedValue?.let { themeListModels[it] } ?: DefaultListModel()
-            ruleTable.model = rulesetList.selectedValue?.let { ruleTableModels[it] } ?: DefaultTableModel()
-        }
-
-        themeToolbarDecorator.addExtraAction(AddThemeActionGroup())
-        themePanel = themeToolbarDecorator.createPanel()
         themeList.cellRenderer = listCellRenderer {
             text(value.themeName)
         }
 
+        rulesetListToolbarDecorator.setAddAction {
+            addRuleset()
+        }
+        themeToolbarDecorator.addExtraAction(AddThemeActionGroup())
         ruleToolbarDecorator.setAddAction {
             addRule()
         }
+        ruleToolbarDecorator.setEditAction {
+            editRule()
+        }
+
+        rulesetListPanel = rulesetListToolbarDecorator.createPanel()
+        themePanel = themeToolbarDecorator.createPanel()
         rulePanel = ruleToolbarDecorator.createPanel()
+
+        rulesetList.addListSelectionListener {
+            themeList.model = rulesetList.selectedValue?.let { themeListModels[it] } ?: DefaultListModel()
+            ruleTable.model = rulesetList.selectedValue?.let { ruleTableModels[it] } ?: DefaultTableModel()
+        }
 
         val layout = GroupLayout(this)
         val vg = layout.createParallelGroup(LEADING)
@@ -151,6 +170,16 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         }
     }
 
+    private fun editRule() {
+        val selectedRow = ruleTable.selectedRow.takeIf { it >= 0 }?.let { ruleTable.convertRowIndexToModel(it) } ?: return
+        val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
+        val initialValue = ruleTableModel.getValue(selectedRow)
+        val rule = showRuleDialog(this, initialValue)
+        if (rule != null) {
+            ruleTableModel.setValue(selectedRow, rule)
+        }
+    }
+
     override fun uiDataSnapshot(sink: DataSink) {
         sink[THEME_LIST_MODEL_KEY] = rulesetList.selectedValue?.let { ruleset -> themeListModels[ruleset] }
     }
@@ -169,10 +198,19 @@ private class RuleTableModel : DefaultTableModel() {
 
     val values: List<RuleConfig>
         get() = (0 until rowCount).map { row ->
-            val key = getValueAt(row, KEY_COLUMN) as String
-            val value = getValueAt(row, VALUE_COLUMN) as LafValueConfig
-            RuleConfig(key, value)
+            getValue(row)
         }
+
+    fun getValue(row: Int): RuleConfig {
+        val key = getValueAt(row, KEY_COLUMN) as String
+        val value = getValueAt(row, VALUE_COLUMN) as LafValueConfig
+        return RuleConfig(key, value)
+    }
+
+    fun setValue(row: Int, rule: RuleConfig) {
+        setValueAt(rule.key, row, KEY_COLUMN)
+        setValueAt(rule.value, row, VALUE_COLUMN)
+    }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
         KEY_COLUMN -> String::class.java

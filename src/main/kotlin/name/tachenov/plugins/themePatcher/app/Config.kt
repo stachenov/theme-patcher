@@ -18,6 +18,7 @@ internal class ThemePatcherConfigService : SerializablePersistentStateComponent<
             updateState {
                 it.copy(rulesets = value)
             }
+            LafPatchingService.getInstance().patchCurrentTheme()
         }
 }
 
@@ -46,9 +47,7 @@ internal data class RuleConfig(
 )
 
 @Serializable
-internal sealed class LafValueConfig {
-    abstract fun toPresentableString(): String
-}
+internal sealed class LafValueConfig
 
 // TODO types to support
 /**
@@ -67,9 +66,5 @@ internal sealed class LafValueConfig {
 
 @Serializable
 internal data class IntLafValueConfig(val intValue: Int): LafValueConfig() {
-    override fun toPresentableString(): String = intValue.toString()
-}
-
-internal fun parseValue(string: String): LafValueConfig? {
-    return IntLafValueConfig(string.toInt())
+    override fun toString(): String = intValue.toString()
 }

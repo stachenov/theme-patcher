@@ -5,6 +5,6 @@ import com.intellij.ide.ui.LafManagerListener
 
 internal class LafPatchingListener : LafManagerListener {
     override fun lookAndFeelChanged(manager: LafManager) {
-        LafPatchingService.getInstance().patchTheme()
+        LafPatchingService.getInstance().patchThemeOnLafChange()
     }
 }
