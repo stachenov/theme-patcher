@@ -1,6 +1,7 @@
 package name.tachenov.plugins.themePatcher.app
 
 import com.intellij.ide.ui.LafManager
+import com.intellij.ide.ui.laf.UIThemeLookAndFeelInfo
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -8,6 +9,7 @@ import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
+import javax.swing.UIDefaults
 import javax.swing.UIManager
 import javax.swing.plaf.ColorUIResource
 
@@ -47,14 +49,43 @@ internal class LafPatchingService {
         }
     }
 
+    private var lastPatchedThemeId: String? = null
+    private val lastPatchedThemeOriginalValues = hashMapOf<String, Any?>()
+
     fun patchThemeOnLafChange() {
         val theme = LafManager.getInstance().currentUIThemeLookAndFeel ?: return
         LOG.debug("Patching the theme id=${theme.id}, name=${theme.name}")
         val defaults = UIManager.getLookAndFeelDefaults()
+        if (lastPatchedThemeId == theme.id) {
+            // Some rules might have been removed,
+            // so the values they patched might be stuck in the patched state.
+            // Restore everything we've ever patched before patching again.
+            restoreOriginalValues(defaults)
+        }
+        else {
+            // The theme has been changed, and therefore the original values are no longer relevant.
+            clearOriginalValues()
+        }
+        patchThemeValues(theme, defaults)
+        lastPatchedThemeId = theme.id
+    }
+
+    private fun restoreOriginalValues(defaults: UIDefaults) {
+        defaults.putAll(lastPatchedThemeOriginalValues)
+    }
+
+    private fun clearOriginalValues() {
+        lastPatchedThemeOriginalValues.clear()
+    }
+
+    private fun patchThemeValues(theme: UIThemeLookAndFeelInfo, defaults: UIDefaults) {
         for (ruleset in ThemePatcherConfigService.getInstance().rulesets) {
             if (theme.id in ruleset.themes.map { it.themeId }) {
                 LOG.debug("Applying the ruleset ${ruleset.rulesetName}")
                 for (rule in ruleset.rules) {
+                    if (lastPatchedThemeOriginalValues[rule.key] == null) { // Is it the first time we patch this value?
+                        lastPatchedThemeOriginalValues[rule.key] = defaults[rule.key]
+                    }
                     defaults[rule.key] = rule.value.toUiDefaultsValue()
                 }
             }
