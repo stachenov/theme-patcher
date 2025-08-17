@@ -91,8 +91,8 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         }
         rulesetListPanel = rulesetListToolbarDecorator.createPanel()
         rulesetList.addListSelectionListener {
-            themeList.model = rulesetList.selectedValue?.let { themeListModels[it] }
-            ruleTable.model = rulesetList.selectedValue?.let { ruleTableModels[it] }
+            themeList.model = rulesetList.selectedValue?.let { themeListModels[it] } ?: DefaultListModel()
+            ruleTable.model = rulesetList.selectedValue?.let { ruleTableModels[it] } ?: DefaultTableModel()
         }
 
         themeToolbarDecorator.addExtraAction(AddThemeActionGroup())
