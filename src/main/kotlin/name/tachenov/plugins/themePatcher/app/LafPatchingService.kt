@@ -59,6 +59,36 @@ internal class LafPatchingService {
         }
     }
 
+
+    /**
+     * Checks whether the give value from the LaF defaults is supported by the plugin.
+     *
+     * Supported types:
+     *
+     * - scaled `Int` values (e.g., `Tree.rowHeight`)
+     *
+     * Planned support, in the order of importance:
+     *
+     * - colors
+     * - sizes (`Dimension`, `Insets`)
+     * - font sizes (only for standard fonts)
+     * - `Boolean` (surprisingly many different values)
+     * - `Double` (mostly stuff like transparency and saturation)
+     * - `Long` (only used for time factors, like `ComboBox.timeFactor`,
+     * determining how fast the user must type for the Swing speed search to work)
+     * - borders (reasonably limited subset)
+     * - `Char` (only used for `PasswordField.echoChar`)
+     *
+     * Not planned:
+     * - unscaled `Int` values (almost not used at all,
+     * not easy to distinguish between scaled and unscaled values,
+     * currently all values are scaled,
+     * so setting a value for an unscaled value could lead to very strange effects,
+     * e.g., `EditorPane.caretBlinkRate` will be scaled)
+     * - fonts, except customizing sizes (not easy to implement and can mess up the UI)
+     * - icons (doesn't seem important, and is somewhat hard to implement)
+     * - `Float` (only used internally by the IDE to store scaling factors, messing with them would be dangerous)
+     */
     fun supportsValueType(value: Any?): Boolean = convertToConfigValue(value) != null
 
     fun convertToConfigValue(value: Any?): LafValueConfig? =

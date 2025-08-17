@@ -49,21 +49,6 @@ internal data class RuleConfig(
 @Serializable
 internal sealed class LafValueConfig
 
-// TODO types to support
-/**
- * class com.intellij.ide.ui.IJColorUIResource
- * class java.lang.Integer
- * class java.lang.Long
- * class java.lang.Boolean
- * class java.lang.Double
- * class java.lang.Float
- * class java.lang.String
- * class com.intellij.util.ui.JBDimension$JBDimensionUIResource
- * class com.intellij.util.ui.JBInsets$JBInsetsUIResource
- * class com.intellij.ui.ColoredSideBorder
- * class java.lang.Character
- */
-
 @Serializable
 internal data class IntLafValueConfig(val intValue: Int): LafValueConfig() {
     override fun toString(): String = intValue.toString()
