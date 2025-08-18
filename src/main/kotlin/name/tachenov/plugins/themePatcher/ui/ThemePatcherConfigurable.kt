@@ -19,7 +19,15 @@ import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
 import java.awt.BorderLayout
 import javax.swing.DefaultListModel
+import javax.swing.GroupLayout
+import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.GroupLayout.DEFAULT_SIZE
+import javax.swing.GroupLayout.PREFERRED_SIZE
+import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.LayoutStyle
+import javax.swing.LayoutStyle.ComponentPlacement.RELATED
+import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
 import javax.swing.ListModel
 import javax.swing.table.DefaultTableModel
 
@@ -40,7 +48,9 @@ internal class ThemePatcherConfigurable : BoundSearchableConfigurable("Theme Pat
 private class RulesetEditor : JPanel(), UiDataProvider {
 
     private val rulesetListModel = DefaultListModel<String>()
-    private val rulesetList = JBList(rulesetListModel)
+    private val rulesetList = JBList(rulesetListModel).apply {
+        visibleRowCount = 5
+    }
     private val rulesetListToolbarDecorator = ToolbarDecorator.createDecorator(rulesetList)
     private val rulesetListPanel: JPanel
 
@@ -131,8 +141,41 @@ private class RulesetEditor : JPanel(), UiDataProvider {
                 }
             }
             group(message("configurable.group.ruleset.config")) {
-                twoColumnsRow( { label(message("configurable.group.ruleset.config.themes")) }, { label(message("configurable.group.ruleset.config.rules")) } )
-                twoColumnsRow( { cell(themePanel).align(AlignY.FILL) }, { cell(rulePanel).align(Align.FILL) } )
+                row {
+                    cell(JPanel().also { panel ->
+                        val themeLabel = JLabel(message("configurable.group.ruleset.config.themes"))
+                        val ruleLabel = JLabel(message("configurable.group.ruleset.config.rules"))
+                        val layout = GroupLayout(panel)
+                        val hg = layout.createSequentialGroup()
+                        val vg = layout.createParallelGroup(LEADING)
+                        hg.apply {
+                            addGroup(layout.createParallelGroup(LEADING).apply {
+                                addComponent(themeLabel)
+                                addComponent(themePanel, DEFAULT_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
+                            })
+                            addPreferredGap(UNRELATED)
+                            addGroup(layout.createParallelGroup(LEADING).apply {
+                                addComponent(ruleLabel)
+                                addComponent(rulePanel, DEFAULT_SIZE, DEFAULT_SIZE, INFINITE_SIZE)
+                            })
+                        }
+                        vg.apply {
+                            addGroup(layout.createSequentialGroup().apply {
+                                addComponent(themeLabel)
+                                addPreferredGap(RELATED)
+                                addComponent(themePanel)
+                            })
+                            addGroup(layout.createSequentialGroup().apply {
+                                addComponent(ruleLabel)
+                                addPreferredGap(RELATED)
+                                addComponent(rulePanel)
+                            })
+                        }
+                        layout.setHorizontalGroup(hg)
+                        layout.setVerticalGroup(vg)
+                        panel.layout = layout
+                    }).align(AlignX.FILL)
+                }
             }
         }
         add(content, BorderLayout.CENTER)
@@ -300,3 +343,4 @@ private val <T> ListModel<T>.values: List<T>
 
 private val THEME_LIST_MODEL_KEY = DataKey.create<DefaultListModel<ThemeConfig>>("name.tachenov.plugins.themePatcher.THEME_LIST_MODEL")
 private val RULE_TABLE_MODEL_KEY = DataKey.create<RuleTableModel>("name.tachenov.plugins.themePatcher.RULE_TABLE_MODEL")
+private const val INFINITE_SIZE = 99999
