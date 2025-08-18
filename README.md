@@ -37,6 +37,13 @@ In the latest versions there's even a color picker tool.
 
 For other values it's harder, and the only definitive way to get them all is the source code
 of the IJ Platform and even Swing.
+In particular, the `JBUI.CurrentTheme` class contains a lot of functions that just retrieve some value
+from the theme by some key.
+So if you see, say, `JBUI.CurrentTheme.ToolWindow.borderColor` getting `"ToolWindow.Stripe.borderColor"`,
+that's the key you're looking for to change the color of the border between the tool window and the tool window stripe.
+
+Another way is to browse the files `IntelliJPlatform.themeMetadata.json` and `JDK.themeMetadata.json`.
+They contain a lot of keys and their descriptions.
 
 Try customizing `Tree.rowHeight` and `*.background` to get started.
 

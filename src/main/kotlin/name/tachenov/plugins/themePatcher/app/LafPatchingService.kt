@@ -96,10 +96,10 @@ internal class LafPatchingService {
      * Supported types:
      *
      * - scaled `Int` values (e.g., `Tree.rowHeight`)
+     * - colors
      *
      * Planned support, in the order of importance:
      *
-     * - colors
      * - sizes (`Dimension`, `Insets`)
      * - font sizes (only for standard fonts)
      * - `Boolean` (surprisingly many different values)
