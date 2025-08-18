@@ -12,35 +12,27 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.ui.LayeredIcon
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBList
-import com.intellij.ui.dsl.builder.AlignX
-import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.dsl.builder.toMutableProperty
+import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.dsl.listCellRenderer.listCellRenderer
 import com.intellij.ui.table.JBTable
 import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
+import java.awt.BorderLayout
 import javax.swing.DefaultListModel
-import javax.swing.GroupLayout
-import javax.swing.GroupLayout.Alignment.LEADING
-import javax.swing.GroupLayout.DEFAULT_SIZE
-import javax.swing.GroupLayout.PREFERRED_SIZE
 import javax.swing.JPanel
-import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import javax.swing.ListModel
 import javax.swing.table.DefaultTableModel
 
 internal class ThemePatcherConfigurable : BoundSearchableConfigurable("Theme Patcher", "name.tachenov.plugins.themePatcher") {
     override fun createPanel(): DialogPanel =
         panel {
-            group(message("configurable.rules")) {
-                row {
-                    val configService = ThemePatcherConfigService.getInstance()
-                    cell(RulesetEditor()).align(AlignX.FILL).bind(
-                        componentGet = { component -> component.rulesets },
-                        componentSet = { component, value -> component.rulesets = value },
-                        prop = configService::rulesets.toMutableProperty(),
-                    )
-                }
+            row {
+                val configService = ThemePatcherConfigService.getInstance()
+                cell(RulesetEditor()).align(AlignX.FILL).bind(
+                    componentGet = { component -> component.rulesets },
+                    componentSet = { component, value -> component.rulesets = value },
+                    prop = configService::rulesets.toMutableProperty(),
+                )
             }
         }
 }
@@ -112,6 +104,9 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         ruleToolbarDecorator.setAddAction {
             addRule()
         }
+        ruleToolbarDecorator.setAddActionUpdater { event ->
+            event.getData(RULE_TABLE_MODEL_KEY) != null
+        }
         ruleToolbarDecorator.setEditAction {
             editRule()
         }
@@ -128,24 +123,19 @@ private class RulesetEditor : JPanel(), UiDataProvider {
             ruleTable.model = rulesetList.selectedValue?.let { ruleTableModels[it] } ?: DefaultTableModel()
         }
 
-        val layout = GroupLayout(this)
-        val vg = layout.createParallelGroup(LEADING)
-        val hg = layout.createSequentialGroup()
-        vg.apply {
-            addComponent(rulesetListPanel)
-            addComponent(themePanel)
-            addComponent(rulePanel)
+        this.layout = BorderLayout()
+        val content = panel {
+            group(message("configurable.group.rulesets")) {
+                row {
+                    cell(rulesetListPanel)
+                }
+            }
+            group(message("configurable.group.ruleset.config")) {
+                twoColumnsRow( { label(message("configurable.group.ruleset.config.themes")) }, { label(message("configurable.group.ruleset.config.rules")) } )
+                twoColumnsRow( { cell(themePanel).align(AlignY.FILL) }, { cell(rulePanel).align(Align.FILL) } )
+            }
         }
-        hg.apply {
-            addComponent(rulesetListPanel, DEFAULT_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
-            addPreferredGap(RELATED)
-            addComponent(themePanel, DEFAULT_SIZE, DEFAULT_SIZE, PREFERRED_SIZE)
-            addPreferredGap(RELATED)
-            addComponent(rulePanel, DEFAULT_SIZE, DEFAULT_SIZE, INFINITE_SIZE)
-        }
-        layout.setHorizontalGroup(hg)
-        layout.setVerticalGroup(vg)
-        this.layout = layout
+        add(content, BorderLayout.CENTER)
     }
 
     private fun addRuleset() {
@@ -159,14 +149,16 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         )
         if (name != null) {
             val rulesetName = name.trim()
-            rulesetListModel.add(rulesetListModel.size(), rulesetName)
+            val index = rulesetListModel.size()
+            rulesetListModel.add(index, rulesetName)
             themeListModels[rulesetName] = DefaultListModel<ThemeConfig>()
             ruleTableModels[rulesetName] = RuleTableModel()
+            rulesetList.selectedIndex = index
         }
     }
 
     private fun addRule() {
-        val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
+        val ruleTableModel = ruleTableModel() ?: return
         val rule = showRuleDialog(this, null, availableKeys(ruleTableModel))
         if (rule != null) {
             ruleTableModel.add(rule)
@@ -175,7 +167,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     private fun editRule() {
         val selectedRow = ruleTable.selectedRow.takeIf { it >= 0 }?.let { ruleTable.convertRowIndexToModel(it) } ?: return
-        val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
+        val ruleTableModel = ruleTableModel() ?: return
         val initialValue = ruleTableModel.getValue(selectedRow)
         val rule = showRuleDialog(this, initialValue, availableKeys(ruleTableModel, includeKey = initialValue.key))
         if (rule != null) {
@@ -185,7 +177,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     private fun removeRule() {
         val selectedRow = ruleTable.selectedRow.takeIf { it >= 0 }?.let { ruleTable.convertRowIndexToModel(it) } ?: return
-        val ruleTableModel = rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] } ?: return
+        val ruleTableModel = ruleTableModel() ?: return
         ruleTableModel.removeRow(selectedRow)
     }
 
@@ -203,7 +195,11 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     override fun uiDataSnapshot(sink: DataSink) {
         sink[THEME_LIST_MODEL_KEY] = rulesetList.selectedValue?.let { ruleset -> themeListModels[ruleset] }
+        sink[RULE_TABLE_MODEL_KEY] = ruleTableModel()
     }
+
+    private fun ruleTableModel(): RuleTableModel? =
+        rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] }
 }
 
 private class RuleTableModel : DefaultTableModel() {
@@ -303,4 +299,4 @@ private val <T> ListModel<T>.values: List<T>
     get() = (0 until size).map { getElementAt(it) }
 
 private val THEME_LIST_MODEL_KEY = DataKey.create<DefaultListModel<ThemeConfig>>("name.tachenov.plugins.themePatcher.THEME_LIST_MODEL")
-private const val INFINITE_SIZE = Short.MAX_VALUE.toInt()
+private val RULE_TABLE_MODEL_KEY = DataKey.create<RuleTableModel>("name.tachenov.plugins.themePatcher.RULE_TABLE_MODEL")
