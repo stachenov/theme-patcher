@@ -126,6 +126,7 @@ private class ValueInput : JPanel() {
     private val inputLayout = CardLayout()
     private val intInput = IntInput()
     private val colorInput = ColorInput()
+    private val dimensionInput = DimensionInput()
 
     private var currentInput: TypedValueInput<*> = intInput
         set(value) {
@@ -137,12 +138,14 @@ private class ValueInput : JPanel() {
     private fun tabForType(type: LafValueConfig): TypedValueInput<LafValueConfig> = when (type) {
         is IntLafValueConfig -> intInput
         is ColorLafValueConfig -> colorInput
+        is DimensionLafValueConfig -> dimensionInput
     } as TypedValueInput<LafValueConfig>
 
     init {
         this.layout = inputLayout
         addInput(intInput)
         addInput(colorInput)
+        addInput(dimensionInput)
     }
 
     private fun addInput(input: TypedValueInput<*>) {
@@ -179,4 +182,23 @@ private class ColorInput : TypedValueInput<ColorLafValueConfig>() {
         }
 
     override val component: ColorPanel = ColorPanel()
+}
+
+private class DimensionInput : TypedValueInput<DimensionLafValueConfig>() {
+    override val acceptedValuesForm: String
+        get() = message("configurable.type.dimension.accepted")
+
+    override var value: DimensionLafValueConfig?
+        get() = parseDimension(component.text)
+        set(value) {
+            component.text = if (value == null) "0,0" else "${value.width},${value.height}"
+        }
+
+    override val component: JBTextField = JBTextField()
+}
+
+private fun parseDimension(string: String): DimensionLafValueConfig? {
+    val values = string.split(',').mapNotNull { it.toIntOrNull() }
+    if (values.size != 2) return null
+    return DimensionLafValueConfig(values[0], values[1])
 }

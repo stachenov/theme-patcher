@@ -7,12 +7,15 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.scale.JBUIScale
+import com.intellij.util.ui.JBDimension
 import com.intellij.util.ui.JBUI
 import java.awt.Color
+import java.awt.Dimension
 import java.awt.Insets
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
 import javax.swing.plaf.ColorUIResource
+import javax.swing.plaf.DimensionUIResource
 import javax.swing.plaf.UIResource
 import kotlin.math.roundToInt
 
@@ -114,10 +117,11 @@ internal class LafPatchingService {
      *
      * - scaled `Int` values (e.g., `Tree.rowHeight`)
      * - colors
+     * - `Dimension`
      *
      * Planned support, in the order of importance:
      *
-     * - sizes (`Dimension`, `Insets`)
+     * - `Insets`
      * - font sizes (only for standard fonts)
      * - `Boolean` (surprisingly many different values)
      * - `Double` (mostly stuff like transparency and saturation)
@@ -143,6 +147,7 @@ internal class LafPatchingService {
             null -> null
             is Int -> IntLafValueConfig(unscaleIfNeeded(key, value))
             is Color -> ColorLafValueConfig(value)
+            is Dimension -> DimensionLafValueConfig(unscaleIfNeeded(key, value))
             else -> null
         }
 }
@@ -150,12 +155,27 @@ internal class LafPatchingService {
 private fun RuleConfig.getUiDefaultsValue(): Any = when (value) {
     is IntLafValueConfig -> scaleIfNeeded(key, value.intValue)
     is ColorLafValueConfig -> ColorUIResource(value.red, value.green, value.blue)
+    is DimensionLafValueConfig -> scaleIfNeeded(key, Dimension(value.width, value.height))
 }
 
 // unscale() is not very reliable, but there's no other easy way
 private fun unscaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, value)) JBUI.unscale(value) else value
 
+private fun unscaleIfNeeded(key: String, value: Dimension): Dimension =
+    if (needsScaling(key, value) && value is JBDimension) {
+        Dimension(JBUI.unscale(value.width), JBUI.unscale(value.height))
+    } else {
+        value
+    }
+
 private fun scaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, value)) JBUI.scale(value) else value
+
+private fun scaleIfNeeded(key: String, value: Dimension): Dimension =
+    if (needsScaling(key, value)) {
+        JBUI.size(value.width, value.height).asUIResource()
+    } else {
+        DimensionUIResource(value.width, value.height)
+    }
 
 /**
  * Determines whether the given key needs to be scaled.
@@ -175,12 +195,13 @@ private fun scaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, 
  * If more keys are added, it will need to be modified, but that's unlikely,
  * as new keys are typically added on the IJ platform side, and they're unscaled.
  *
- * Insets get special treatment for some reason, they're always scaled if they implement
+ * Insets and dimensions get special treatment for some reason, they're always scaled if they implement
  * [UIResource] (as they should).
  */
 private fun needsScaling(key: String, value: Any): Boolean =
     key in SCALED_KEYS ||
     (value is Int && key.endsWith(".maxGutterIconWidth")) ||
+    (value is Dimension && value is UIResource) ||
     (value is Insets && value is UIResource)
 
 private val SCALED_KEYS = setOf(
