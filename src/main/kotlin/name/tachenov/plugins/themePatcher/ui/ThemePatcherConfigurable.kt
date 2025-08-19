@@ -1,3 +1,18 @@
+/**
+Copyright 2025 Sergei Tachenov
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
 @file:Suppress("UnstableApiUsage")
 
 package name.tachenov.plugins.themePatcher.ui
@@ -12,23 +27,20 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.ui.LayeredIcon
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBList
-import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.toMutableProperty
 import com.intellij.ui.dsl.listCellRenderer.listCellRenderer
 import com.intellij.ui.table.JBTable
 import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
 import java.awt.BorderLayout
-import javax.swing.DefaultListModel
-import javax.swing.GroupLayout
+import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.LayoutStyle
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
-import javax.swing.ListModel
 import javax.swing.table.DefaultTableModel
 
 internal class ThemePatcherConfigurable : BoundSearchableConfigurable("Theme Patcher", "name.tachenov.plugins.themePatcher") {
