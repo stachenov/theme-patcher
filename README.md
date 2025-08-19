@@ -45,15 +45,14 @@ that's the key you're looking for to change the color of the border between the 
 Another way is to browse the files `IntelliJPlatform.themeMetadata.json` and `JDK.themeMetadata.json`.
 They contain a lot of keys and their descriptions.
 
+For the Compact Mode, there are keys ending with ".compact".
+They will be used instead of their regular counterparts when the Compact Mode is on.
+
 Try customizing `Tree.rowHeight` and `*.background` to get started.
 
 ## Limitations
 
 Only integers and colors are supported at the moment.
-
-The Compact Mode isn't fully supported. Customizing a key, e.g., `Tree.rowHeight`,
-will customize it for both the normal and the compact modes.
-More advanced support is coming.
 
 It's not possible to specify whether an integer value is scaled or not.
 Instead, there's an auto-detection that should work most of the time.

@@ -3,7 +3,6 @@ package name.tachenov.plugins.themePatcher.app
 import com.intellij.ide.ui.LafManager
 import com.intellij.ide.ui.UIDensity
 import com.intellij.ide.ui.UISettings
-import com.intellij.ide.ui.laf.UIThemeLookAndFeelInfo
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -74,7 +73,7 @@ internal class LafPatchingService {
             // The settings have been changed, and therefore the original values are no longer relevant.
             clearOriginalValues()
         }
-        patchThemeValues(theme, lookAndFeelDefaults)
+        patchThemeValues(lafSettings, lookAndFeelDefaults)
         lastPatchedLafSettings = lafSettings
     }
 
@@ -86,15 +85,22 @@ internal class LafPatchingService {
         lastPatchedThemeOriginalValues.clear()
     }
 
-    private fun patchThemeValues(theme: UIThemeLookAndFeelInfo, defaults: LookAndFeelDefaults) {
+    private fun patchThemeValues(lafSettings: LafSettings, defaults: LookAndFeelDefaults) {
         for (ruleset in ThemePatcherConfigService.getInstance().rulesets) {
-            if (theme.id in ruleset.themes.map { it.themeId }) {
+            if (lafSettings.themeId in ruleset.themes.map { it.themeId }) {
                 LOG.debug("Applying the ruleset ${ruleset.rulesetName}")
+                val compactValues = if (lafSettings.uiDensity == UIDensity.COMPACT) {
+                    ruleset.rules.filter { it.key.endsWith(COMPACT_KEY_SUFFIX) }
+                        .associate { it.key.removeSuffix(COMPACT_KEY_SUFFIX) to it.getUiDefaultsValue() }
+                }
+                else {
+                    null
+                }
                 for (rule in ruleset.rules) {
                     if (lastPatchedThemeOriginalValues[rule.key] == null) { // Is it the first time we patch this value?
                         lastPatchedThemeOriginalValues[rule.key] = defaults[rule.key]
                     }
-                    defaults[rule.key] = rule.getUiDefaultsValue()
+                    defaults[rule.key] = compactValues?.get(rule.key) ?: rule.getUiDefaultsValue()
                 }
             }
         }
@@ -196,5 +202,7 @@ private data class RoughFloat(val floatTimes100: Int) {
     constructor(value: Float) : this((value * 100).roundToInt())
     override fun toString(): String = (floatTimes100.toFloat() / 100.0f).toString()
 }
+
+private const val COMPACT_KEY_SUFFIX = ".compact"
 
 private val LOG = logger<LafPatchingService>()
