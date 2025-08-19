@@ -55,6 +55,5 @@ The Compact Mode isn't fully supported. Customizing a key, e.g., `Tree.rowHeight
 will customize it for both the normal and the compact modes.
 More advanced support is coming.
 
-Integer values must be specified without scaling, they will be scaled automatically.
-But this means that it's not reasonably possible to customize an integer key
-that's not supposed to be scaled at all. But there are almost no such keys anyway.
+It's not possible to specify whether an integer value is scaled or not.
+Instead, there's an auto-detection that should work most of the time.

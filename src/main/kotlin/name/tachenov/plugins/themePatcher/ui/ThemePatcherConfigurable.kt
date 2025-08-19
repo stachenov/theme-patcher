@@ -227,7 +227,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
     private fun availableKeys(ruleTableModel: RuleTableModel, includeKey: String? = null): List<String> {
         val allAvailable = lookAndFeelDefaults.entries
             .asSequence()
-            .filter { LafPatchingService.getInstance().supportsValueType(it.value) }
+            .filter { LafPatchingService.getInstance().supportsValueType(it.key, it.value) }
             .map { it.key }
             .toSet()
         val alreadyUsed = ruleTableModel.values.map { it.key }.toSet()

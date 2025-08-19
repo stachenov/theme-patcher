@@ -10,9 +10,11 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.ui.JBUI
 import java.awt.Color
+import java.awt.Insets
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
 import javax.swing.plaf.ColorUIResource
+import javax.swing.plaf.UIResource
 import kotlin.math.roundToInt
 
 @Service(Service.Level.APP)
@@ -92,7 +94,7 @@ internal class LafPatchingService {
                     if (lastPatchedThemeOriginalValues[rule.key] == null) { // Is it the first time we patch this value?
                         lastPatchedThemeOriginalValues[rule.key] = defaults[rule.key]
                     }
-                    defaults[rule.key] = rule.value.toUiDefaultsValue()
+                    defaults[rule.key] = rule.getUiDefaultsValue()
                 }
             }
         }
@@ -128,21 +130,61 @@ internal class LafPatchingService {
      * - icons (doesn't seem important, and is somewhat hard to implement)
      * - `Float` (only used internally by the IDE to store scaling factors, messing with them would be dangerous)
      */
-    fun supportsValueType(value: Any?): Boolean = convertToConfigValue(value) != null
+    fun supportsValueType(key: String, value: Any?): Boolean = convertToConfigValue(key, value) != null
 
-    fun convertToConfigValue(value: Any?): LafValueConfig? =
+    fun convertToConfigValue(key: String, value: Any?): LafValueConfig? =
         when (value) {
             null -> null
-            is Int -> IntLafValueConfig(JBUI.unscale(value)) // unscale() is not very reliable, but there's no other easy way
+            is Int -> IntLafValueConfig(if (needsScaling(key, value)) JBUI.unscale(value) else value) // unscale() is not very reliable, but there's no other easy way
             is Color -> ColorLafValueConfig(value)
             else -> null
         }
 }
 
-private fun LafValueConfig.toUiDefaultsValue(): Any = when (this) {
-    is IntLafValueConfig -> JBUI.scale(intValue)
-    is ColorLafValueConfig -> ColorUIResource(red, green, blue)
+private fun RuleConfig.getUiDefaultsValue(): Any = when (value) {
+    is IntLafValueConfig -> if (needsScaling(key, value)) JBUI.scale(value.intValue) else value.intValue
+    is ColorLafValueConfig -> ColorUIResource(value.red, value.green, value.blue)
 }
+
+/**
+ * Determines whether the given key needs to be scaled.
+ *
+ * Some values are stored scaled, some are scaled on-demand.
+ * There's a reason for this: it's much more reliable and easier to scale on-demand,
+ * because the scaling factor can depend on a lot of things,
+ * and if the value is stored unscaled, it's always possible to scale it as needed.
+ * On the other hand, if it's stored scaled, it's not always obvious what scaling factor was used,
+ * and whether it's still valid.
+ * But for values used by Swing directly, not by the IJ Platform,
+ * it's impossible to store unscaled values, as Swing is not aware of IJ scaling.
+ * "Tree.rowHeight" is a good example: in order for Swing to use the correct value,
+ * it must be stored scaled.
+ *
+ * This function is based on the internal IJ function `patchHiDPI` that is used by [LafManager].
+ * If more keys are added, it will need to be modified, but that's unlikely,
+ * as new keys are typically added on the IJ platform side, and they're unscaled.
+ *
+ * Insets get special treatment for some reason, they're always scaled if they implement
+ * [UIResource] (as they should).
+ */
+private fun needsScaling(key: String, value: Any): Boolean =
+    key in SCALED_KEYS ||
+    (value is Int && key.endsWith(".maxGutterIconWidth")) ||
+    (value is Insets && value is UIResource)
+
+private val SCALED_KEYS = setOf(
+    "List.rowHeight",
+    "Table.rowHeight",
+    "Tree.rowHeight",
+    "VersionControl.Log.Commit.rowHeight",
+    "Tree.leftChildIndent",
+    "Tree.rightChildIndent",
+    "SettingsTree.rowHeight",
+    "Slider.horizontalSize",
+    "Slider.verticalSize",
+    "Slider.minimumHorizontalSize",
+    "Slider.minimumVerticalSize",
+)
 
 private data class LafSettings(
     val themeId: String,

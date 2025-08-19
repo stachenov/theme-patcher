@@ -92,7 +92,7 @@ private class RuleDialog(
 
     private fun showSelectedKeyInput() {
         val selectedKey = keyComboBox.selectedItem as? String? ?: return
-        valueInput.value = LafPatchingService.getInstance().convertToConfigValue(lookAndFeelDefaults[selectedKey])
+        valueInput.value = LafPatchingService.getInstance().convertToConfigValue(selectedKey, lookAndFeelDefaults[selectedKey])
     }
 
     override fun doValidate(): ValidationInfo? = when {
