@@ -7,6 +7,7 @@ import com.intellij.openapi.components.service
 import kotlinx.serialization.Serializable
 import java.awt.Color
 import java.awt.Dimension
+import java.awt.Insets
 import javax.swing.plaf.ColorUIResource
 
 @State(name = "themePatcher", storages = [Storage("themePatcher.xml")])
@@ -75,4 +76,15 @@ internal data class DimensionLafValueConfig(
 ) : LafValueConfig() {
     constructor(dimension: Dimension) : this(dimension.width, dimension.height)
     override fun toString(): String = "%d,%d".format(width, height)
+}
+
+@Serializable
+internal data class InsetsLafValueConfig(
+    val top: Int,
+    val left: Int,
+    val bottom: Int,
+    val right: Int,
+) : LafValueConfig() {
+    constructor(insets: Insets) : this(insets.top,  insets.left, insets.bottom, insets.right)
+    override fun toString(): String = "%d,%d,%d,%d".format(top,  left, bottom, right)
 }

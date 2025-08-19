@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.ui.JBDimension
+import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.awt.Dimension
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
 import javax.swing.plaf.ColorUIResource
 import javax.swing.plaf.DimensionUIResource
+import javax.swing.plaf.InsetsUIResource
 import javax.swing.plaf.UIResource
 import kotlin.math.roundToInt
 
@@ -118,10 +120,10 @@ internal class LafPatchingService {
      * - scaled `Int` values (e.g., `Tree.rowHeight`)
      * - colors
      * - `Dimension`
+     * - `Insets`
      *
      * Planned support, in the order of importance:
      *
-     * - `Insets`
      * - font sizes (only for standard fonts)
      * - `Boolean` (surprisingly many different values)
      * - `Double` (mostly stuff like transparency and saturation)
@@ -148,14 +150,17 @@ internal class LafPatchingService {
             is Int -> IntLafValueConfig(unscaleIfNeeded(key, value))
             is Color -> ColorLafValueConfig(value)
             is Dimension -> DimensionLafValueConfig(unscaleIfNeeded(key, value))
+            is Insets -> InsetsLafValueConfig(unscaleIfNeeded(key, value))
             else -> null
         }
 }
 
+@Suppress("UseDPIAwareInsets")
 private fun RuleConfig.getUiDefaultsValue(): Any = when (value) {
     is IntLafValueConfig -> scaleIfNeeded(key, value.intValue)
     is ColorLafValueConfig -> ColorUIResource(value.red, value.green, value.blue)
     is DimensionLafValueConfig -> scaleIfNeeded(key, Dimension(value.width, value.height))
+    is InsetsLafValueConfig -> scaleIfNeeded(key, Insets(value.top, value.left, value.bottom, value.right))
 }
 
 // unscale() is not very reliable, but there's no other easy way
@@ -168,6 +173,13 @@ private fun unscaleIfNeeded(key: String, value: Dimension): Dimension =
         value
     }
 
+private fun unscaleIfNeeded(key: String, value: Insets): Insets =
+    if (needsScaling(key, value) && value is JBInsets) {
+        value.unscaled
+    } else {
+        value
+    }
+
 private fun scaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, value)) JBUI.scale(value) else value
 
 private fun scaleIfNeeded(key: String, value: Dimension): Dimension =
@@ -175,6 +187,13 @@ private fun scaleIfNeeded(key: String, value: Dimension): Dimension =
         JBUI.size(value.width, value.height).asUIResource()
     } else {
         DimensionUIResource(value.width, value.height)
+    }
+
+private fun scaleIfNeeded(key: String, value: Insets): Insets =
+    if (needsScaling(key, value)) {
+        JBUI.insets(value.top, value.left, value.bottom, value.right).asUIResource()
+    } else {
+        InsetsUIResource(value.top, value.left, value.bottom, value.right)
     }
 
 /**

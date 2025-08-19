@@ -55,7 +55,8 @@ Try customizing `Tree.rowHeight` and `*.background` to get started.
 The following types are supported at the moments:
 - integers;
 - colors;
-- sizes (width x height).
+- sizes (width x height);
+- insets (top,left,bottom,right).
 
 It's not possible to specify whether an integer value is scaled or not.
 Instead, there's an auto-detection that should work most of the time.

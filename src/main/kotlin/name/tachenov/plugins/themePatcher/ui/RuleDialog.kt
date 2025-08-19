@@ -127,6 +127,7 @@ private class ValueInput : JPanel() {
     private val intInput = IntInput()
     private val colorInput = ColorInput()
     private val dimensionInput = DimensionInput()
+    private val insetsInput = InsetsInput()
 
     private var currentInput: TypedValueInput<*> = intInput
         set(value) {
@@ -139,6 +140,7 @@ private class ValueInput : JPanel() {
         is IntLafValueConfig -> intInput
         is ColorLafValueConfig -> colorInput
         is DimensionLafValueConfig -> dimensionInput
+        is InsetsLafValueConfig -> insetsInput
     } as TypedValueInput<LafValueConfig>
 
     init {
@@ -146,6 +148,7 @@ private class ValueInput : JPanel() {
         addInput(intInput)
         addInput(colorInput)
         addInput(dimensionInput)
+        addInput(insetsInput)
     }
 
     private fun addInput(input: TypedValueInput<*>) {
@@ -201,4 +204,23 @@ private fun parseDimension(string: String): DimensionLafValueConfig? {
     val values = string.split(',').mapNotNull { it.toIntOrNull() }
     if (values.size != 2) return null
     return DimensionLafValueConfig(values[0], values[1])
+}
+
+private class InsetsInput : TypedValueInput<InsetsLafValueConfig>() {
+    override val acceptedValuesForm: String
+        get() = message("configurable.type.insets.accepted")
+
+    override var value: InsetsLafValueConfig?
+        get() = parseInsets(component.text)
+        set(value) {
+            component.text = if (value == null) "0,0" else "${value.top},${value.left},${value.bottom},${value.right}"
+        }
+
+    override val component: JBTextField = JBTextField()
+}
+
+private fun parseInsets(string: String): InsetsLafValueConfig? {
+    val values = string.split(',').mapNotNull { it.toIntOrNull() }
+    if (values.size != 4) return null
+    return InsetsLafValueConfig(values[0], values[1], values[2], values[3])
 }
