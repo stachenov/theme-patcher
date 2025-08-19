@@ -1,15 +1,19 @@
 package name.tachenov.plugins.themePatcher.app
 
 import com.intellij.ide.ui.LafManager
+import com.intellij.ide.ui.UIDensity
+import com.intellij.ide.ui.UISettings
 import com.intellij.ide.ui.laf.UIThemeLookAndFeelInfo
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
 import javax.swing.plaf.ColorUIResource
+import kotlin.math.roundToInt
 
 @Service(Service.Level.APP)
 internal class LafPatchingService {
@@ -47,24 +51,29 @@ internal class LafPatchingService {
         }
     }
 
-    private var lastPatchedThemeId: String? = null
+    private var lastPatchedLafSettings: LafSettings? = null
     private val lastPatchedThemeOriginalValues = hashMapOf<String, Any?>()
 
     fun patchThemeOnLafChange() {
         val theme = LafManager.getInstance().currentUIThemeLookAndFeel ?: return
+        val lafSettings = LafSettings(
+            themeId = theme.id,
+            uiDensity = UISettings.getInstance().uiDensity,
+            scaling = RoughFloat(JBUIScale.scale(1f)),
+        )
         LOG.debug("Patching the theme id=${theme.id}, name=${theme.name}")
-        if (lastPatchedThemeId == theme.id) {
+        if (lastPatchedLafSettings == lafSettings) {
             // Some rules might have been removed,
             // so the values they patched might be stuck in the patched state.
             // Restore everything we've ever patched before patching again.
             restoreOriginalValues(lookAndFeelDefaults)
         }
         else {
-            // The theme has been changed, and therefore the original values are no longer relevant.
+            // The settings have been changed, and therefore the original values are no longer relevant.
             clearOriginalValues()
         }
         patchThemeValues(theme, lookAndFeelDefaults)
-        lastPatchedThemeId = theme.id
+        lastPatchedLafSettings = lafSettings
     }
 
     private fun restoreOriginalValues(defaults: LookAndFeelDefaults) {
@@ -133,6 +142,17 @@ internal class LafPatchingService {
 private fun LafValueConfig.toUiDefaultsValue(): Any = when (this) {
     is IntLafValueConfig -> JBUI.scale(intValue)
     is ColorLafValueConfig -> ColorUIResource(red, green, blue)
+}
+
+private data class LafSettings(
+    val themeId: String,
+    val uiDensity: UIDensity,
+    val scaling: RoughFloat,
+)
+
+private data class RoughFloat(val floatTimes100: Int) {
+    constructor(value: Float) : this((value * 100).roundToInt())
+    override fun toString(): String = (floatTimes100.toFloat() / 100.0f).toString()
 }
 
 private val LOG = logger<LafPatchingService>()
