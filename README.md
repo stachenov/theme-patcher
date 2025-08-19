@@ -1,8 +1,5 @@
 # Theme Patcher Plugin for IntelliJ IDEs
 
-**Warning!** This is still a work in progress. It's full of bugs, not yet implemented features,
-and it only supports a couple of types at the moment. The UI is barely there too. But it already sort of works.
-
 ## How to Use
 
 Because it's not ready yet, there's no distribution. You can only use it if you compile it manually.
@@ -37,12 +34,13 @@ In the latest versions there's even a color picker tool.
 
 For other values it's harder, and the only definitive way to get them all is the source code
 of the IJ Platform and even Swing.
-In particular, the `JBUI.CurrentTheme` class contains a lot of functions that just retrieve some value
+In particular, the [`JBUI.CurrentTheme`](https://github.com/JetBrains/intellij-community/blob/master/platform/util/ui/src/com/intellij/util/ui/JBUI.java) class contains a lot of functions that just retrieve some value
 from the theme by some key.
 So if you see, say, `JBUI.CurrentTheme.ToolWindow.borderColor` getting `"ToolWindow.Stripe.borderColor"`,
 that's the key you're looking for to change the color of the border between the tool window and the tool window stripe.
 
-Another way is to browse the files `IntelliJPlatform.themeMetadata.json` and `JDK.themeMetadata.json`.
+Another way is to browse the files [`IntelliJPlatform.themeMetadata.json`](https://github.com/JetBrains/intellij-community/blob/master/platform/platform-resources/src/themes/metadata/IntelliJPlatform.themeMetadata.json)
+and [`JDK.themeMetadata.json`](https://github.com/JetBrains/intellij-community/blob/master/platform/platform-resources/src/themes/metadata/JDK.themeMetadata.json).
 They contain a lot of keys and their descriptions.
 
 For the Compact Mode, there are keys ending with ".compact".
