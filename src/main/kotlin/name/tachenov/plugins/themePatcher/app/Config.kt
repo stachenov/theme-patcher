@@ -88,3 +88,10 @@ internal data class InsetsLafValueConfig(
     constructor(insets: Insets) : this(insets.top,  insets.left, insets.bottom, insets.right)
     override fun toString(): String = "%d,%d,%d,%d".format(top,  left, bottom, right)
 }
+
+@Serializable
+internal data class FontSizeLafValueConfig(
+    val size: Int,
+) : LafValueConfig() {
+    override fun toString(): String = size.toString()
+}

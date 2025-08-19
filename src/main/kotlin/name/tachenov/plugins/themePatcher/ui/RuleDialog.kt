@@ -128,6 +128,7 @@ private class ValueInput : JPanel() {
     private val colorInput = ColorInput()
     private val dimensionInput = DimensionInput()
     private val insetsInput = InsetsInput()
+    private val fontSizeInput = FontSizeInput()
 
     private var currentInput: TypedValueInput<*> = intInput
         set(value) {
@@ -141,6 +142,7 @@ private class ValueInput : JPanel() {
         is ColorLafValueConfig -> colorInput
         is DimensionLafValueConfig -> dimensionInput
         is InsetsLafValueConfig -> insetsInput
+        is FontSizeLafValueConfig -> fontSizeInput
     } as TypedValueInput<LafValueConfig>
 
     init {
@@ -149,6 +151,7 @@ private class ValueInput : JPanel() {
         addInput(colorInput)
         addInput(dimensionInput)
         addInput(insetsInput)
+        addInput(fontSizeInput)
     }
 
     private fun addInput(input: TypedValueInput<*>) {
@@ -223,4 +226,17 @@ private fun parseInsets(string: String): InsetsLafValueConfig? {
     val values = string.split(',').mapNotNull { it.toIntOrNull() }
     if (values.size != 4) return null
     return InsetsLafValueConfig(values[0], values[1], values[2], values[3])
+}
+
+private class FontSizeInput : TypedValueInput<FontSizeLafValueConfig>() {
+    override val acceptedValuesForm: String
+        get() = message("configurable.type.font.size.accepted")
+
+    override var value: FontSizeLafValueConfig?
+        get() = component.text.toIntOrNull()?.takeIf { it in 6..36 }?.let { FontSizeLafValueConfig(it) }
+        set(value) {
+            component.text = value?.toString() ?: ""
+        }
+
+    override val component: JBTextField = JBTextField()
 }

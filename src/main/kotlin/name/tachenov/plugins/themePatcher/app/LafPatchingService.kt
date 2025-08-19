@@ -12,6 +12,7 @@ import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.JBUI
 import java.awt.Color
 import java.awt.Dimension
+import java.awt.Font
 import java.awt.Insets
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
@@ -94,9 +95,9 @@ internal class LafPatchingService {
         for (ruleset in ThemePatcherConfigService.getInstance().rulesets) {
             if (lafSettings.themeId in ruleset.themes.map { it.themeId }) {
                 LOG.debug("Applying the ruleset ${ruleset.rulesetName}")
-                val compactValues = if (lafSettings.uiDensity == UIDensity.COMPACT) {
+                val compactValuePatchers: Map<String, (Any?) -> Any?>? = if (lafSettings.uiDensity == UIDensity.COMPACT) {
                     ruleset.rules.filter { it.key.endsWith(COMPACT_KEY_SUFFIX) }
-                        .associate { it.key.removeSuffix(COMPACT_KEY_SUFFIX) to it.getUiDefaultsValue() }
+                        .associate { rule -> rule.key.removeSuffix(COMPACT_KEY_SUFFIX) to { rule.patchUiDefaultsValue(it) } }
                 }
                 else {
                     null
@@ -105,7 +106,8 @@ internal class LafPatchingService {
                     if (lastPatchedThemeOriginalValues[rule.key] == null) { // Is it the first time we patch this value?
                         lastPatchedThemeOriginalValues[rule.key] = defaults[rule.key]
                     }
-                    defaults[rule.key] = compactValues?.get(rule.key) ?: rule.getUiDefaultsValue()
+                    val oldValue = defaults[rule.key]
+                    defaults[rule.key] = compactValuePatchers?.get(rule.key)?.invoke(oldValue) ?: rule.patchUiDefaultsValue(oldValue)
                 }
             }
         }
@@ -121,10 +123,10 @@ internal class LafPatchingService {
      * - colors
      * - `Dimension`
      * - `Insets`
+     * - font sizes
      *
      * Planned support, in the order of importance:
      *
-     * - font sizes (only for standard fonts)
      * - `Boolean` (surprisingly many different values)
      * - `Double` (mostly stuff like transparency and saturation)
      * - `Long` (only used for time factors, like `ComboBox.timeFactor`,
@@ -151,16 +153,18 @@ internal class LafPatchingService {
             is Color -> ColorLafValueConfig(value)
             is Dimension -> DimensionLafValueConfig(unscaleIfNeeded(key, value))
             is Insets -> InsetsLafValueConfig(unscaleIfNeeded(key, value))
+            is Font -> FontSizeLafValueConfig(unscaleFontSize(value))
             else -> null
         }
 }
 
 @Suppress("UseDPIAwareInsets")
-private fun RuleConfig.getUiDefaultsValue(): Any = when (value) {
+private fun RuleConfig.patchUiDefaultsValue(oldValue: Any?): Any? = when (value) {
     is IntLafValueConfig -> scaleIfNeeded(key, value.intValue)
     is ColorLafValueConfig -> ColorUIResource(value.red, value.green, value.blue)
     is DimensionLafValueConfig -> scaleIfNeeded(key, Dimension(value.width, value.height))
     is InsetsLafValueConfig -> scaleIfNeeded(key, Insets(value.top, value.left, value.bottom, value.right))
+    is FontSizeLafValueConfig -> (oldValue as? Font?)?.deriveFont(scaleFontSize(value.size).toFloat())
 }
 
 // unscale() is not very reliable, but there's no other easy way
@@ -180,6 +184,8 @@ private fun unscaleIfNeeded(key: String, value: Insets): Insets =
         value
     }
 
+private fun unscaleFontSize(value: Font): Int = JBUI.unscale(value.size)
+
 private fun scaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, value)) JBUI.scale(value) else value
 
 private fun scaleIfNeeded(key: String, value: Dimension): Dimension =
@@ -195,6 +201,8 @@ private fun scaleIfNeeded(key: String, value: Insets): Insets =
     } else {
         InsetsUIResource(value.top, value.left, value.bottom, value.right)
     }
+
+private fun scaleFontSize(value: Int): Int = JBUI.scale(value)
 
 /**
  * Determines whether the given key needs to be scaled.
