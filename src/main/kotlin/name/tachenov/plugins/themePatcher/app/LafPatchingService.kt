@@ -141,16 +141,21 @@ internal class LafPatchingService {
     fun convertToConfigValue(key: String, value: Any?): LafValueConfig? =
         when (value) {
             null -> null
-            is Int -> IntLafValueConfig(if (needsScaling(key, value)) JBUI.unscale(value) else value) // unscale() is not very reliable, but there's no other easy way
+            is Int -> IntLafValueConfig(unscaleIfNeeded(key, value))
             is Color -> ColorLafValueConfig(value)
             else -> null
         }
 }
 
 private fun RuleConfig.getUiDefaultsValue(): Any = when (value) {
-    is IntLafValueConfig -> if (needsScaling(key, value)) JBUI.scale(value.intValue) else value.intValue
+    is IntLafValueConfig -> scaleIfNeeded(key, value.intValue)
     is ColorLafValueConfig -> ColorUIResource(value.red, value.green, value.blue)
 }
+
+// unscale() is not very reliable, but there's no other easy way
+private fun unscaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, value)) JBUI.unscale(value) else value
+
+private fun scaleIfNeeded(key: String, value: Int): Int = if (needsScaling(key, value)) JBUI.scale(value) else value
 
 /**
  * Determines whether the given key needs to be scaled.
