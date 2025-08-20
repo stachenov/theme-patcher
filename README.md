@@ -20,8 +20,28 @@ so at the moment it's not possible to customize a key that the current theme doe
 It _is_ possible to customize fallback keys, though (the ones that start with a `*.`).
 For example, if you need to customize the tool window background, there's the `ToolWindow.background` key for that.
 But if it's not in the current theme, then `*.background` will be used instead, and you can customize it.
-It may change colors of other components as well, and currently the only way to avoid it is to select
-a theme that explicitly defines the key you need. Then it'll be in the list, even if you're editing rules for some other theme.
+
+Sometimes there's a key that a theme doesn't define, and there's not even a fallback, just a hardcoded default.
+The current version of the plugin doesn't "officially" support modifying such keys, but it's still possible in two ways.
+
+First, because the set of keys is taken from the current theme, you can try switching to another theme
+and see if the key is there. There's nothing that prevents having one theme active but setting up a ruleset
+to patch some other theme.
+
+Second, and it's actually a bug in the UI, but the one that turned into a useful feature,
+you can add _some_ key of the needed type to the table,
+and then just... rename it by selecting the table cell containing the key and double-clicking it or pressing F2.
+The table was supposed to be only modified through the edit dialog,
+but it turns out that it's possible to just rename a key (but not to edit its value) like that.
+Try, for example, patching `MainToolbar.Icon.insets.compact` and renaming it to `MainToolbar.Icon.insets`.
+Be careful, though, to make sure the value type of the key you _intend_ to modify is the same
+as the type of the key you initially added. So don't rename `MainToolbar.Icon.insets` to `Tree.rowHeight`.
+
+It is possible that a future version will allow customizing any keys without these tricks,
+but the benefit of restricting to the present keys is that the type of the key can be detected
+from its actual value. Customizing random keys will need a UI to select the value type,
+and worse, one would have to guess the type correctly for it to work. So it wouldn't be a good UX either way,
+which is why it isn't implemented.
 
 ## Where to get keys
 
