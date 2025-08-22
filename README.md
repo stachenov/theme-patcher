@@ -2,7 +2,7 @@
 
 ## How to Use
 
-Because it's not ready yet, there's no distribution. You can only use it if you compile it manually.
+Install it [from the Marketplace](https://plugins.jetbrains.com/plugin/28238-theme-patcher) or directly from the IDE.
 
 The plugin adds a settings page that consists of three components:
 
