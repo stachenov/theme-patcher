@@ -16,6 +16,7 @@
         Found a theme you like, except that one color?<br/>
         Or you'd like all trees to be a bit denser?<br/>
         With this plugin, you can set up rules to modify installed themes on the fly as they're applied.<br/>
+        See <a href="https://github.com/stachenov/theme-patcher/blob/main/README.md">README</a> for details.
     ]]></description>
 
     <!-- Product and plugin compatibility requirements.
