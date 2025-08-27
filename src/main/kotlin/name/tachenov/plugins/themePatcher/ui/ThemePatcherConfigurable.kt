@@ -17,6 +17,7 @@ limitations under the License.
 
 package name.tachenov.plugins.themePatcher.ui
 
+import com.intellij.icons.AllIcons
 import com.intellij.ide.ui.LafManager
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.options.BoundSearchableConfigurable
@@ -24,7 +25,6 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
-import com.intellij.ui.LayeredIcon
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBList
 import com.intellij.ui.dsl.builder.AlignX
@@ -66,7 +66,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
     private val rulesetListToolbarDecorator = ToolbarDecorator.createDecorator(rulesetList)
     private val rulesetListPanel: JPanel
 
-    private val themeListModels = hashMapOf<String, DefaultListModel<ThemeConfig>>()
+    private val themeListModels = hashMapOf<String, ThemeListModel>()
     private val themeList = JBList<ThemeConfig>()
     private val themeToolbarDecorator = ToolbarDecorator.createDecorator(themeList)
     private val themePanel: JPanel
@@ -91,8 +91,8 @@ private class RulesetEditor : JPanel(), UiDataProvider {
             themeListModels.clear()
             rulesetListModel.addAll(value.map { it.rulesetName })
             value.forEach { ruleset ->
-                themeListModels[ruleset.rulesetName] = DefaultListModel<ThemeConfig>().also { themeListModel ->
-                    themeListModel.addAll(ruleset.themes)
+                themeListModels[ruleset.rulesetName] = ThemeListModel(allThemes()).also { themeListModel ->
+                    themeListModel.setThemes(ruleset.themes)
                 }
                 ruleTableModels[ruleset.rulesetName] = RuleTableModel().also { ruleTableModel ->
                     ruleTableModel.addAll(ruleset.rules)
@@ -122,7 +122,10 @@ private class RulesetEditor : JPanel(), UiDataProvider {
         rulesetListToolbarDecorator.setAddAction {
             addRuleset()
         }
+        themeToolbarDecorator.disableUpDownActions()
+        themeToolbarDecorator.disableRemoveAction()
         themeToolbarDecorator.addExtraAction(AddThemeActionGroup())
+        themeToolbarDecorator.addExtraAction(RemoveThemeAction())
         ruleToolbarDecorator.setAddAction {
             addRule()
         }
@@ -206,7 +209,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
             val rulesetName = name.trim()
             val index = rulesetListModel.size()
             rulesetListModel.add(index, rulesetName)
-            themeListModels[rulesetName] = DefaultListModel<ThemeConfig>()
+            themeListModels[rulesetName] = ThemeListModel(allThemes())
             ruleTableModels[rulesetName] = RuleTableModel()
             rulesetList.selectedIndex = index
         }
@@ -250,6 +253,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     override fun uiDataSnapshot(sink: DataSink) {
         sink[THEME_LIST_MODEL_KEY] = rulesetList.selectedValue?.let { ruleset -> themeListModels[ruleset] }
+        sink[SELECTED_THEME_KEY] = themeList.selectedValue
         sink[RULE_TABLE_MODEL_KEY] = ruleTableModel()
     }
 
@@ -303,7 +307,8 @@ private class RuleTableModel : DefaultTableModel() {
 
 private class AddThemeActionGroup : ActionGroup() {
     init {
-        templatePresentation.icon = LayeredIcon.ADD_WITH_DROPDOWN
+        templatePresentation.text = message("configurable.theme.add")
+        templatePresentation.icon = AllIcons.General.Add
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
@@ -320,12 +325,7 @@ private class AddThemeActionGroup : ActionGroup() {
 
     private fun themesToAdd(e: AnActionEvent): List<ThemeConfig> {
         val themeListModel = e.getData(THEME_LIST_MODEL_KEY) ?: return emptyList()
-        val alreadyAddedThemes = (0 until themeListModel.size()).map { themeListModel.get(it) }.toSet()
-        val canAddThemes = LafManager.getInstance().installedThemes.mapNotNull { themeLaf ->
-            val theme = ThemeConfig(themeLaf.name, themeLaf.id)
-            if (theme in alreadyAddedThemes) null else theme
-        }.toList()
-        return canAddThemes
+        return themeListModel.getAvailableThemes()
     }
 }
 
@@ -338,7 +338,26 @@ private class AddThemeAction(
 
     override fun actionPerformed(e: AnActionEvent) {
         val themeListModel = e.getData(THEME_LIST_MODEL_KEY) ?: return
-        themeListModel.add(themeListModel.size(), theme)
+        themeListModel.addTheme(theme)
+    }
+}
+
+private class RemoveThemeAction : DumbAwareAction() {
+    init {
+        templatePresentation.text = message("configurable.theme.remove")
+        templatePresentation.icon = AllIcons.General.Remove
+    }
+
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+    override fun update(e: AnActionEvent) {
+        e.presentation.isEnabled = e.getData(THEME_LIST_MODEL_KEY) != null && e.getData(SELECTED_THEME_KEY) != null
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val model = e.getData(THEME_LIST_MODEL_KEY) ?: return
+        val theme = e.getData(SELECTED_THEME_KEY) ?: return
+        model.removeTheme(theme)
     }
 }
 
@@ -350,9 +369,15 @@ private class RulesetValidator(private val existingRulesetNames: List<String>) :
     override fun canClose(inputString: String?): Boolean = checkInput(inputString)
 }
 
+private fun allThemes() =
+    LafManager.getInstance().installedThemes.map { themeLaf ->
+        ThemeConfig(themeLaf.name, themeLaf.id)
+    }.sortedBy { it.themeName }.toList()
+
 private val <T> ListModel<T>.values: List<T>
     get() = (0 until size).map { getElementAt(it) }
 
-private val THEME_LIST_MODEL_KEY = DataKey.create<DefaultListModel<ThemeConfig>>("name.tachenov.plugins.themePatcher.THEME_LIST_MODEL")
+private val THEME_LIST_MODEL_KEY = DataKey.create<ThemeListModel>("name.tachenov.plugins.themePatcher.THEME_LIST_MODEL")
+private val SELECTED_THEME_KEY = DataKey.create<ThemeConfig>("name.tachenov.plugins.themePatcher.SELECTED_THEME")
 private val RULE_TABLE_MODEL_KEY = DataKey.create<RuleTableModel>("name.tachenov.plugins.themePatcher.RULE_TABLE_MODEL")
 private const val INFINITE_SIZE = 99999
