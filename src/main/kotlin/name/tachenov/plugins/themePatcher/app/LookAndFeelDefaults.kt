@@ -18,11 +18,10 @@ package name.tachenov.plugins.themePatcher.app
 import javax.swing.UIDefaults
 import javax.swing.UIManager
 
-internal val lookAndFeelDefaults = LookAndFeelDefaults
+internal val lookAndFeelDefaults
+    get() = LookAndFeelDefaults(UIManager.getLookAndFeelDefaults())
 
-internal object LookAndFeelDefaults {
-    private val lafDefaults: UIDefaults
-        get() = UIManager.getLookAndFeelDefaults()
+internal class LookAndFeelDefaults(private val lafDefaults: UIDefaults) {
 
     @Suppress("UNCHECKED_CAST")
     private val starMap: MutableMap<Any, Any?>?
