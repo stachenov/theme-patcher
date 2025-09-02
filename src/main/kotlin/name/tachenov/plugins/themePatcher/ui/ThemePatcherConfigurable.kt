@@ -35,6 +35,8 @@ import com.intellij.ui.table.JBTable
 import name.tachenov.plugins.themePatcher.app.*
 import name.tachenov.plugins.themePatcher.ui.ThemePatcherMessageBundle.message
 import java.awt.BorderLayout
+import java.awt.event.MouseEvent
+import java.util.*
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
@@ -72,7 +74,7 @@ private class RulesetEditor : JPanel(), UiDataProvider {
     private val themePanel: JPanel
 
     private val ruleTableModels = hashMapOf<String, RuleTableModel>()
-    private val ruleTable = JBTable()
+    private val ruleTable = RuleTable()
     private val ruleToolbarDecorator = ToolbarDecorator.createDecorator(ruleTable)
     private val rulePanel: JPanel
 
@@ -225,6 +227,10 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     private fun editRule() {
         val selectedRow = ruleTable.selectedRow.takeIf { it >= 0 }?.let { ruleTable.convertRowIndexToModel(it) } ?: return
+        editRule(selectedRow)
+    }
+
+    private fun editRule(selectedRow: Int) {
         val ruleTableModel = ruleTableModel() ?: return
         val initialValue = ruleTableModel.getValue(selectedRow)
         val rule = showRuleDialog(this, initialValue, availableKeys(ruleTableModel, includeKey = initialValue.key))
@@ -259,6 +265,37 @@ private class RulesetEditor : JPanel(), UiDataProvider {
 
     private fun ruleTableModel(): RuleTableModel? =
         rulesetList.selectedValue?.let { ruleset -> ruleTableModels[ruleset] }
+
+    private inner class RuleTable : JBTable() {
+        override fun editCellAt(row: Int, column: Int, e: EventObject?): Boolean {
+            if (cellEditor != null && !cellEditor.stopCellEditing()) {
+                return false
+            }
+            if (row < 0 || row >= getRowCount() || column < 0 || column >= columnCount) {
+                return false
+            }
+            if (!isCellEditable(row, column)) {
+                return false
+            }
+            val column = convertColumnIndexToModel(column)
+            if (column == RuleTableModel.VALUE_COLUMN && isEditValueEvent(e)) {
+                val row = convertRowIndexToModel(row)
+                SwingUtilities.invokeLater { // let's not mess with the table right in the middle of an input event
+                    editRule(row)
+                }
+                return false // it's not an edit as far as the JTable API is concerned
+            }
+            else {
+                return super.editCellAt(row, column, e)
+            }
+        }
+
+        private fun isEditValueEvent(e: EventObject?): Boolean {
+            if (e == null) return true // null means invoked by API, allow editing
+            if (e !is MouseEvent) return true // likely a keyboard event, OK, let's start editing
+            return e.clickCount == 2 // don't open the editing dialog on just a single click
+        }
+    }
 }
 
 private class RuleTableModel : DefaultTableModel() {
