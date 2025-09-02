@@ -25,6 +25,7 @@ import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.ui.JBDimension
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.JBUI
+import org.jetbrains.annotations.VisibleForTesting
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -79,11 +80,16 @@ internal class LafPatchingService {
     fun patchThemeOnLafChange() {
         val theme = LafManager.getInstance().currentUIThemeLookAndFeel ?: return
         val lafSettings = LafSettings(
-            themeId = theme.id,
+            theme = ThemeConfig(theme.name, theme.id),
             uiDensity = UISettings.getInstance().uiDensity,
-            scaling = RoughFloat(JBUIScale.scale(1f)),
+            scaling = JBUIScale.scale(1f),
         )
-        LOG.debug("Patching the theme id=${theme.id}, name=${theme.name}")
+        patchLafDefaults(lafSettings, lookAndFeelDefaults, ThemePatcherConfigService.getInstance().rulesets)
+    }
+
+    @VisibleForTesting
+    fun patchLafDefaults(lafSettings: LafSettings, lookAndFeelDefaults: LookAndFeelDefaults, rulesets: List<RulesetConfig>) {
+        LOG.debug("Patching the theme id=${lafSettings.themeId}, name=${lafSettings.themeName}")
         if (lastPatchedLafSettings == lafSettings) {
             // Some rules might have been removed,
             // so the values they patched might be stuck in the patched state.
@@ -94,7 +100,7 @@ internal class LafPatchingService {
             // The settings have been changed, and therefore the original values are no longer relevant.
             clearOriginalValues()
         }
-        patchThemeValues(lafSettings, lookAndFeelDefaults)
+        patchThemeValues(lafSettings, lookAndFeelDefaults, rulesets)
         lastPatchedLafSettings = lafSettings
     }
 
@@ -106,8 +112,8 @@ internal class LafPatchingService {
         lastPatchedThemeOriginalValues.clear()
     }
 
-    private fun patchThemeValues(lafSettings: LafSettings, defaults: LookAndFeelDefaults) {
-        for (ruleset in ThemePatcherConfigService.getInstance().rulesets) {
+    private fun patchThemeValues(lafSettings: LafSettings, defaults: LookAndFeelDefaults, rulesets: List<RulesetConfig>) {
+        for (ruleset in rulesets) {
             if (lafSettings.themeId in ruleset.themes.map { it.themeId }) {
                 LOG.debug("Applying the ruleset ${ruleset.rulesetName}")
                 val compactValuePatchers: Map<String, (Any?) -> Any?>? = if (lafSettings.uiDensity == UIDensity.COMPACT) {
@@ -127,7 +133,6 @@ internal class LafPatchingService {
             }
         }
     }
-
 
     /**
      * Checks whether the give value from the LaF defaults is supported by the plugin.
@@ -260,13 +265,13 @@ private val SCALED_KEYS = setOf(
     "Slider.minimumVerticalSize",
 )
 
-private data class LafSettings(
-    val themeId: String,
-    val uiDensity: UIDensity,
-    val scaling: RoughFloat,
-)
+internal data class LafSettings(val theme: ThemeConfig, val uiDensity: UIDensity, val scaling: RoughFloat) {
+    constructor(theme: ThemeConfig, uiDensity: UIDensity, scaling: Float) : this(theme, uiDensity, RoughFloat(scaling))
+    val themeId: String get() = theme.themeId
+    val themeName: String get() = theme.themeName
+}
 
-private data class RoughFloat(val floatTimes100: Int) {
+internal data class RoughFloat(val floatTimes100: Int) {
     constructor(value: Float) : this((value * 100).roundToInt())
     override fun toString(): String = (floatTimes100.toFloat() / 100.0f).toString()
 }
