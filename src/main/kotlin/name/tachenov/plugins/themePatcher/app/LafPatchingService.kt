@@ -116,22 +116,39 @@ internal class LafPatchingService {
         for (ruleset in rulesets) {
             if (lafSettings.themeId in ruleset.themes.map { it.themeId }) {
                 LOG.debug("Applying the ruleset ${ruleset.rulesetName}")
-                val compactValuePatchers: Map<String, (Any?) -> Any?>? = if (lafSettings.uiDensity == UIDensity.COMPACT) {
-                    ruleset.rules.filter { it.key.endsWith(COMPACT_KEY_SUFFIX) }
-                        .associate { rule -> rule.key.removeSuffix(COMPACT_KEY_SUFFIX) to { rule.patchUiDefaultsValue(it) } }
+                val rules = if (lafSettings.uiDensity == UIDensity.COMPACT) {
+                    convertToCompactModeRules(ruleset.rules)
                 }
                 else {
-                    null
+                    ruleset.rules
                 }
-                for (rule in ruleset.rules) {
-                    if (lastPatchedThemeOriginalValues[rule.key] == null) { // Is it the first time we patch this value?
-                        lastPatchedThemeOriginalValues[rule.key] = defaults[rule.key]
-                    }
+                for (rule in rules) {
                     val oldValue = defaults[rule.key]
-                    defaults[rule.key] = compactValuePatchers?.get(rule.key)?.invoke(oldValue) ?: rule.patchUiDefaultsValue(oldValue)
+                    if (lastPatchedThemeOriginalValues[rule.key] == null) { // Is it the first time we patch this value?
+                        lastPatchedThemeOriginalValues[rule.key] = oldValue
+                    }
+                    defaults[rule.key] = rule.patchUiDefaultsValue(oldValue)
                 }
             }
         }
+    }
+
+    private fun convertToCompactModeRules(rules: List<RuleConfig>): List<RuleConfig> {
+        val result = hashMapOf<String, RuleConfig>()
+        val compactRulesByKey = hashMapOf<String, RuleConfig>()
+        for (rule in rules) {
+            if (rule.key.endsWith(COMPACT_KEY_SUFFIX)) {
+                val modifiedKey = rule.key.removeSuffix(COMPACT_KEY_SUFFIX)
+                val modifiedRule = rule.copy(key = modifiedKey)
+                compactRulesByKey[modifiedKey] = modifiedRule
+            }
+            else {
+                result[rule.key] = rule
+            }
+        }
+        // compact rules take priority over normal ones
+        result.putAll(compactRulesByKey)
+        return result.values.toList()
     }
 
     /**
