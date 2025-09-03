@@ -19,6 +19,11 @@
         See <a href="https://github.com/stachenov/theme-patcher/blob/main/README.md">README</a> for details.
     ]]></description>
 
+    <change-notes><![CDATA[
+        Minor UI improvements.<br/>
+        Fixed a bug when compact mode values weren't applied without their non-compact counterparts.
+    ]]></change-notes>
+
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>

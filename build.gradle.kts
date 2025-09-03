@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "name.tachenov.plugins"
-version = "1.0.2-SNAPSHOT"
+version = "1.0.2"
 
 repositories {
     mavenCentral()
