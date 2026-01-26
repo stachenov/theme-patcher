@@ -74,6 +74,11 @@ internal data class IntLafValueConfig(val intValue: Int): LafValueConfig() {
 }
 
 @Serializable
+internal data class DoubleLafValueConfig(val doubleValue: Double): LafValueConfig() {
+    override fun toString(): String = doubleValue.toString()
+}
+
+@Serializable
 internal data class ColorLafValueConfig(
     val red: Int,
     val green: Int,
