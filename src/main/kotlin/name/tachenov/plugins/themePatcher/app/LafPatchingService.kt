@@ -161,11 +161,11 @@ internal class LafPatchingService {
      * - `Dimension`
      * - `Insets`
      * - font sizes
+     * - `Double` (e.g. for transparency or saturation)
      *
      * Planned support, in the order of importance:
      *
      * - `Boolean` (surprisingly many different values)
-     * - `Double` (mostly stuff like transparency and saturation)
      * - `Long` (only used for time factors, like `ComboBox.timeFactor`,
      * determining how fast the user must type for the Swing speed search to work)
      * - borders (reasonably limited subset)
@@ -187,6 +187,7 @@ internal class LafPatchingService {
         when (value) {
             null -> null
             is Int -> IntLafValueConfig(unscaleIfNeeded(key, value))
+            is Double -> DoubleLafValueConfig(value)
             is Color -> ColorLafValueConfig(value)
             is Dimension -> DimensionLafValueConfig(unscaleIfNeeded(key, value))
             is Insets -> InsetsLafValueConfig(unscaleIfNeeded(key, value))
@@ -198,6 +199,7 @@ internal class LafPatchingService {
 @Suppress("UseDPIAwareInsets")
 private fun RuleConfig.patchUiDefaultsValue(oldValue: Any?): Any? = when (value) {
     is IntLafValueConfig -> scaleIfNeeded(key, value.intValue)
+    is DoubleLafValueConfig -> value.doubleValue
     is ColorLafValueConfig -> ColorUIResource(value.red, value.green, value.blue)
     is DimensionLafValueConfig -> scaleIfNeeded(key, Dimension(value.width, value.height))
     is InsetsLafValueConfig -> scaleIfNeeded(key, Insets(value.top, value.left, value.bottom, value.right))

@@ -140,6 +140,7 @@ private class ValueInput : JPanel() {
 
     private val inputLayout = CardLayout()
     private val intInput = IntInput()
+    private val doubleInput = DoubleInput()
     private val colorInput = ColorInput()
     private val dimensionInput = DimensionInput()
     private val insetsInput = InsetsInput()
@@ -154,6 +155,7 @@ private class ValueInput : JPanel() {
     @Suppress("UNCHECKED_CAST")
     private fun tabForType(type: LafValueConfig): TypedValueInput<LafValueConfig> = when (type) {
         is IntLafValueConfig -> intInput
+        is DoubleLafValueConfig -> doubleInput
         is ColorLafValueConfig -> colorInput
         is DimensionLafValueConfig -> dimensionInput
         is InsetsLafValueConfig -> insetsInput
@@ -163,6 +165,7 @@ private class ValueInput : JPanel() {
     init {
         this.layout = inputLayout
         addInput(intInput)
+        addInput(doubleInput)
         addInput(colorInput)
         addInput(dimensionInput)
         addInput(insetsInput)
@@ -186,6 +189,19 @@ private class IntInput : TypedValueInput<IntLafValueConfig>() {
 
     override var value: IntLafValueConfig?
         get() = component.text.toIntOrNull()?.let { IntLafValueConfig(it) }
+        set(value) {
+            component.text = value?.toString() ?: ""
+        }
+
+    override val component: JBTextField = JBTextField()
+}
+
+private class DoubleInput : TypedValueInput<DoubleLafValueConfig>() {
+    override val acceptedValuesForm: String
+        get() = message("configurable.type.double.accepted")
+
+    override var value: DoubleLafValueConfig?
+        get() = component.text.toDoubleOrNull()?.let { DoubleLafValueConfig(it) }
         set(value) {
             component.text = value?.toString() ?: ""
         }
